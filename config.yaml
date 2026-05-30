@@ -1,0 +1,31 @@
+# Knowledge Graph Configuration
+
+knowledge_graph:
+  output: "knowledge_graph.json"
+  batch_size: 50
+
+databases:
+  - name: "institutions"
+    type: "sqlite"
+    path: "../institution_news/institutions.db"
+    enabled: true
+
+  - name: "liangke_historical"
+    type: "sqlite"
+    path: "../liangke_historical/historical.db"
+    enabled: true
+
+  - name: "liangke_daily"
+    type: "mysql"
+    host: "127.0.0.1"
+    port: 3306
+    user: "scraper"
+    password: "scraper123"
+    database: "liangke_scraper"
+    enabled: true
+
+llm:
+  entity_extraction:
+    enabled: true
+    batch_size: 20
+    max_calls_per_run: 60
