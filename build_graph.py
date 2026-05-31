@@ -1,5 +1,5 @@
 """Knowledge graph builder - processes articles from all registered databases."""
-import sys, os, yaml, time
+import sys, os, yaml, json, time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core.adapters import (
@@ -53,9 +53,32 @@ def run():
             batch_ids = unprocessed[i:i + batch_size]
             articles = adapter.get_articles(batch_ids)
 
-            # Rule-based extraction
+            # Rule-based extraction (use standardized tags if available)
             for art in articles:
                 entities, relations = extract_article_meta(art)
+                # Merge standardized tags from DB if present
+                if art.tags:
+                    try:
+                        std_tags = json.loads(art.tags) if isinstance(art.tags, str) else art.tags
+                        if isinstance(std_tags, dict):
+                            for inst in std_tags.get('institutions', []):
+                                entities.setdefault('institution', []).append(inst)
+                            for tech in std_tags.get('technologies', []):
+                                entities.setdefault('technology', []).append(tech)
+                            for prod in std_tags.get('products', []):
+                                entities.setdefault('product', []).append(prod)
+                            for topic in std_tags.get('tags', []):
+                                entities.setdefault('topic', []).append(topic)
+                        elif isinstance(std_tags, list):
+                            # Old format: plain list of topic tags
+                            for t in std_tags:
+                                if isinstance(t, str) and t not in ('资本运作','产品动态','企业资讯','科技前沿','宏观态势'):
+                                    entities.setdefault('topic', []).append(t)
+                        # Deduplicate
+                        for k in entities:
+                            entities[k] = sorted(set(entities[k]))
+                    except (json.JSONDecodeError, TypeError):
+                        pass
                 kg.add_article(art, entities, relations)
 
             # LLM enhancement for deep relations

@@ -15,6 +15,7 @@ class Article:
     publish_date: str
     url: str
     db_name: str
+    tags: str = ''  # JSON string of standardized tags
 
 
 class DBAdapter:
@@ -67,7 +68,7 @@ class InstitutionsAdapter(DBAdapter):
         conn = self._connect()
         placeholders = ','.join('?' * len(row_ids))
         rows = conn.execute(
-            f'SELECT id, title, content, source, publish_date, url '
+            f'SELECT id, title, content, source, publish_date, url, tags '
             f'FROM articles WHERE id IN ({placeholders})',
             row_ids,
         ).fetchall()
@@ -81,6 +82,7 @@ class InstitutionsAdapter(DBAdapter):
                 publish_date=r['publish_date'] or '',
                 url=r['url'] or '',
                 db_name=self.name,
+                tags=r['tags'] or '',
             )
             for r in rows
         ]
@@ -121,7 +123,7 @@ class LiangkeHistoricalAdapter(DBAdapter):
         conn = self._connect()
         placeholders = ','.join('?' * len(row_ids))
         rows = conn.execute(
-            f'SELECT id, title, content, source_domain, published_at, liangke_url '
+            f'SELECT id, title, content, source_domain, published_at, liangke_url, tags '
             f'FROM articles WHERE id IN ({placeholders})',
             row_ids,
         ).fetchall()
@@ -135,6 +137,7 @@ class LiangkeHistoricalAdapter(DBAdapter):
                 publish_date=str(r['published_at'] or '')[:10],
                 url=r['liangke_url'] or '',
                 db_name=self.name,
+                tags=r['tags'] or '',
             )
             for r in rows
         ]
@@ -183,7 +186,7 @@ class LiangkeDailyAdapter(DBAdapter):
         placeholders = ','.join('%s' for _ in row_ids)
         with conn.cursor() as c:
             c.execute(
-                f'SELECT id, title, content, source_domain, original_date, reference_url '
+                f'SELECT id, title, content, source_domain, original_date, reference_url, tags '
                 f'FROM articles WHERE id IN ({placeholders})',
                 row_ids,
             )
@@ -198,6 +201,7 @@ class LiangkeDailyAdapter(DBAdapter):
                 publish_date=str(r['original_date'] or '')[:10],
                 url=r['reference_url'] or '',
                 db_name=self.name,
+                tags=r.get('tags', '') or '',
             )
             for r in rows
         ]

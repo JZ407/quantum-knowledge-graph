@@ -128,7 +128,7 @@ INSTITUTIONS = {
     'Northrop Grumman': ['Northrop Grumman'],
     'EDF': ['EDF', 'Electricite de France'],
     'KPMG': ['KPMG'],
-    'EY': ['EY', 'Ernst & Young'],
+    'Ernst & Young': ['Ernst & Young', 'Ernst and Young'],
     'Deloitte': ['Deloitte'],
     'Accenture': ['Accenture'],
 }
