@@ -60,18 +60,22 @@ def run():
                 if art.tags:
                     try:
                         std_tags = json.loads(art.tags) if isinstance(art.tags, str) else art.tags
-                        if isinstance(std_tags, dict):
-                            for inst in std_tags.get('institutions', []):
+                        # New project-based format
+                        if isinstance(std_tags, dict) and 'knowledge_graph' in std_tags:
+                            kg_data = std_tags['knowledge_graph']
+                            for inst in kg_data.get('institutions', []):
                                 entities.setdefault('institution', []).append(inst)
-                            for tech in std_tags.get('technologies', []):
+                            for tech in kg_data.get('technologies', []):
                                 entities.setdefault('technology', []).append(tech)
-                            for prod in std_tags.get('products', []):
+                            for prod in kg_data.get('products', []):
                                 entities.setdefault('product', []).append(prod)
-                            for topic in std_tags.get('tags', []):
-                                entities.setdefault('topic', []).append(topic)
-                        elif isinstance(std_tags, list):
-                            # Old format: plain list of topic tags
-                            for t in std_tags:
+                            for person in kg_data.get('people', []):
+                                entities.setdefault('person', []).append(person)
+                            # Search tags → topics with Covers relation
+                            for t in std_tags.get('search_tags', []):
+                                entities.setdefault('topic', []).append(t)
+                        elif isinstance(tg, list):
+                            for t in tg:
                                 if isinstance(t, str) and t not in ('资本运作','产品动态','企业资讯','科技前沿','宏观态势'):
                                     entities.setdefault('topic', []).append(t)
                         # Deduplicate

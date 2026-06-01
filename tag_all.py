@@ -16,7 +16,7 @@ TAG_COLUMN = 'tags'  # Column name varies: MySQL uses 'tags', SQLite uses 'tags'
 
 def run():
     total = 0
-    stats = {'total_tags': 0, 'total_inst': 0, 'total_tech': 0, 'total_prod': 0, 'total_people': 0}
+    stats = {'weekly': 0, 'kg_inst': 0, 'kg_tech': 0, 'kg_prod': 0, 'kg_people': 0, 'search': 0}
 
     for adapter in ADAPTERS:
         count = adapter.get_total_count()
@@ -38,48 +38,38 @@ def run():
                 # Write tags back to the appropriate DB
                 _write_tags(adapter, art, result, tags_json)
 
-                stats['total_tags'] += len(result.get('tags', []))
-                stats['total_inst'] += len(result.get('institutions', []))
-                stats['total_tech'] += len(result.get('technologies', []))
-                stats['total_prod'] += len(result.get('products', []))
-                stats['total_people'] += len(result.get('people', []))
+                kg = result.get('knowledge_graph', {})
+                stats['weekly'] += len(result.get('weekly', []))
+                stats['kg_inst'] += len(kg.get('institutions', []))
+                stats['kg_tech'] += len(kg.get('technologies', []))
+                stats['kg_prod'] += len(kg.get('products', []))
+                stats['kg_people'] += len(kg.get('people', []))
+                stats['search'] += len(result.get('search_tags', []))
                 total += 1
 
             print(f'  Tagged {total} articles...', end='\r')
 
     print(f'\n\n[DONE] {total} articles tagged')
-    print(f'  Topic tags: {stats["total_tags"]}')
-    print(f'  Institution mentions: {stats["total_inst"]}')
-    print(f'  Technology mentions: {stats["total_tech"]}')
-    print(f'  Product mentions: {stats["total_prod"]}')
-    print(f'  People mentions: {stats["total_people"]}')
+    print(f'  周报标签: {stats["weekly"]}')
+    print(f'  知识图谱-机构: {stats["kg_inst"]}')
+    print(f'  知识图谱-技术: {stats["kg_tech"]}')
+    print(f'  知识图谱-产品: {stats["kg_prod"]}')
+    print(f'  知识图谱-人物: {stats["kg_people"]}')
+    print(f'  检索标签: {stats["search"]}')
 
 
 def _write_tags(adapter, art, result, tags_json):
-    """Write tags back to the article in its source DB."""
+    """Write project-based tags back to DB."""
     conn = adapter._connect()
     try:
         cur = conn.cursor()
         row_id = int(art.id.split(':')[-1])
 
         if adapter.name == 'liangke_daily':
-            # MySQL: merge with existing 5-category tag (DictCursor)
-            cur.execute('SELECT tags FROM articles WHERE id = %s', (row_id,))
-            existing = cur.fetchone()
-            existing_tags = []
-            if existing and existing.get('tags'):
-                raw = existing['tags']
-                try:
-                    existing_tags = json.loads(raw) if isinstance(raw, str) else raw
-                except (json.JSONDecodeError, TypeError):
-                    existing_tags = []
-            five_cat = [t for t in existing_tags if t in ('资本运作','产品动态','企业资讯','科技前沿','宏观态势')]
-            merged = result['tags'] + five_cat
             cur.execute('UPDATE articles SET tags = %s WHERE id = %s',
-                       (json.dumps(merged, ensure_ascii=False), row_id))
+                       (tags_json, row_id))
             conn.commit()
         else:
-            # SQLite
             conn.execute('UPDATE articles SET tags = ? WHERE id = ?', (tags_json, row_id))
             conn.commit()
     except Exception as e:
